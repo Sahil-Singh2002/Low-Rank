@@ -265,32 +265,43 @@ def RayleighQuotientIteration(A,v0,kmax):
         tuple: (v_array, eigval_array, r_array). Arrays containing 
         approximations of eigenvectors, eigenvalues, and residuals.
     """
-# Initialize
-    v_array = np.zeros([np . shape(v0)[0],kmax+1])
-    eigval_array = np.zeros(kmax+1)
-    r_array = np.zeros(kmax+1)
-
-    v = v0 / np.linalg.norm(v0)  # Normalize the initial vector
     
-    for k in range(0,kmax+1):
-        eigval_array[k] = np.dot(v.T, np.dot(A, v)) / np.dot(v.T, v)  # Rayleigh quotient
+    # Initialize
+    m = np.shape(v0)[0]
+    v_array = np.zeros([m,kmax])
+    eigval_array = np.zeros(kmax)
+    r_array = np.zeros(kmax)
+    
+    # Initial eigenvector 
+    v = v0
+    
+    # Initial eigenvalue
+    eigval = v0.T @ A @ v0
+    
+    
+    for k in np.arange(kmax):
+        
+        # A - eigval I
+        B = A - eigval * np.eye(m)
+    
+        # Solve Bw = v
+        w = np.linalg.solve(B,v)
+        
+        # Normalize
+        v = w / np.linalg.norm(w,2)
+        
+        # Rayleigh quotient
+        eigval = v.T @ A @ v
 
-        try:
-            # Solve the shifted system (A - lambda_k*I)v = w for the next v
-            w = np.linalg.solve(A - eigval_array[k]*np.eye(np.shape(v0)[0]), v)
-        except np.linalg.LinAlgError:
-                # If the system is singular, break the iteration
-            break
-        # Normalize the solution
-        v_next = w / np.linalg.norm(w)
-        # Store the results
-        v_array[:, k] = v_next.flatten()
-        # Prepare for next iteration
-        v = v_next
-            
-        r_array[k] = np.linalg.norm(np.dot(A, v_next) - eigval_array[k] * v_next)
-
-    return v_array[:, 1:] , eigval_array[1:] , r_array[1:] 
+        # Residual
+        r = np.linalg.norm(eigval*v - A@v,2)
+        
+        # Store
+        v_array[:,[k]] = v
+        eigval_array[k] = eigval
+        r_array[k] = r
+        
+    return v_array, eigval_array, r_array
 
 
 def CGAATmethod(A,b,y0,kmax):
